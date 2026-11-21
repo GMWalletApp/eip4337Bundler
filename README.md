@@ -4,7 +4,19 @@
 <p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a> · <a href="LICENSE">MIT</a></p>
 <p align="center"><a href="#wallet-integration">Wallet integration</a> · <a href="#operation-lifecycle">Operation lifecycle</a> · <a href="#production-readiness">Production readiness</a></p>
 
-**Project status.** This repository currently contains the design and license. The sections below define the intended behavior of the first implementation. A runnable service, verified network deployments and measured capacity are release deliverables.
+This Go service runs an operator-managed pool for EntryPoint **v0.7**. Wallets track individual operations by `userOpHash`. Operators can run multiple replicas against PostgreSQL and deliver signed outer transactions through GM Wallet Broadcaster.
+
+## Quick start
+
+Use Go 1.26.2 or later, a trace-capable execution node, a configured signer and Broadcaster. Copy the example, set the reviewed code hashes, beneficiary, indexing start block and credential environment variables, and install the v0.7 simulations artifact as described in the deployment guide.
+
+```sh
+cp config.example.json config.json
+go build -o bin/bundler ./cmd/bundler
+./bin/bundler -config config.json
+```
+
+Check `GET /ready` after startup for index catch-up. [Configuration, state transitions, integration interfaces and end-to-end tests](docs/operations.md)
 
 ## What the Bundler does
 
@@ -17,11 +29,11 @@ A wallet signs a `UserOperation` that describes what its smart account should do
 | Bundler | Validate against a specific chain and EntryPoint, maintain the operation pool, select a bundle, request an outer signature, and index the outcome of each operation. |
 | GM Wallet Broadcaster | Receive the **signed outer transaction** via `POST /EVM/transactions`. Schedule its sender nonce, fan out to available RPC providers, track replacements and notify the Bundler. [Broadcaster API](https://github.com/GMWalletApp/Broadcaster/blob/main/docs/api.md) |
 
-**Compatibility target.** Start with an operator-managed pool and EntryPoint **v0.7** to match the EntryPoint configured in GM Wallet's Ethereum Broadcaster example. Pin the chain ID, address, runtime code hash, ABI and hashing rules together. Verify each deployment before advertising its address through RPC. v0.8/v0.9, EIP-7702 authorizations, signature aggregators and public mempool peering need separate compatibility tests before enablement. A chain listed by Broadcaster still needs a verified EntryPoint and simulation-capable RPC to run a Bundler. [GM Wallet configuration](https://github.com/GMWalletApp/Broadcaster/blob/main/config.example.json) · [EntryPoint releases](https://github.com/eth-infinitism/account-abstraction/releases)
+**Compatibility.** The managed pool uses EntryPoint **v0.7**, matching the EntryPoint configured in GM Wallet's Ethereum Broadcaster example. Pin the chain ID, address, runtime code hash, ABI and hashing rules together. Verify each deployment before advertising its address through RPC. v0.8/v0.9, EIP-7702 authorizations, signature aggregators and public mempool peering need separate compatibility tests before enablement. A chain listed by Broadcaster still needs a verified EntryPoint and simulation-capable RPC to run a Bundler. [GM Wallet configuration](https://github.com/GMWalletApp/Broadcaster/blob/main/config.example.json) · [EntryPoint releases](https://github.com/eth-infinitism/account-abstraction/releases)
 
 ## Wallet integration
 
-The examples use curl and jq against a deployment you operate. Set `BUNDLER_RPC_URL` to the HTTPS URL for one chain and `BUNDLER_API_TOKEN` to the integration credential. The planned wire interface uses JSON-RPC 2.0 over HTTP POST. [ERC-7769](https://eips.ethereum.org/EIPS/eip-7769)
+The examples use curl and jq against a deployment you operate. Set `BUNDLER_RPC_URL` to the HTTPS URL for one chain and `BUNDLER_API_TOKEN` to the integration credential. The wallet endpoint uses JSON-RPC 2.0 over HTTP POST. [ERC-7769](https://eips.ethereum.org/EIPS/eip-7769)
 
 | Method | Parameters | Wallet action |
 |---|---|---|
@@ -31,6 +43,7 @@ The examples use curl and jq against a deployment you operate. Set `BUNDLER_RPC_
 | `eth_sendUserOperation` | Signed operation, EntryPoint | Save the returned hash. It acknowledges validated, durable admission. |
 | `eth_getUserOperationByHash` | User operation hash | Retrieve the operation and its inclusion coordinates when available. A pending lookup can return null. |
 | `eth_getUserOperationReceipt` | User operation hash | A null result means there is no inclusion receipt available. An object contains the operation's `success`, gas cost, logs and outer transaction receipt. |
+| `gm_getUserOperationStatus` | User operation hash | Inspect scheduling state, Broadcaster task ID and outer transaction candidates tracked by this service. |
 
 ### Example: submit one operation
 
@@ -111,6 +124,8 @@ The sender's operation nonce contains a 192-bit key and a 64-bit sequence. Keep 
 | Operator funds | Isolate signers per network, authorize only the intended EntryPoint and beneficiary, cap outer fees and monitor signer balance, paymaster exposure and realized gas margin. Keep signing keys in an external signer or HSM. |
 | Recovery | Make claims, replacements and bundle membership atomic across replicas. Persist indexing checkpoints, back up the store and rehearse restore. Catch up from the checkpoint before reporting current receipts after a restart. |
 | Service operation | Authenticate clients over TLS, enforce request and simulation quotas, and expose diagnostics privately. Correlate chain ID, EntryPoint, operation hash, bundle hash and block hash in traces. Alert on stalled indexing, simulation saturation, queue age, signer balance and provider failures. |
+
+**Verified locally.** Anvil and the real Broadcaster exercise a successful self-funded operation and a reverted sponsored operation in one bundle, replica takeover after signing, lost submission acknowledgement, and inclusion after a reorg. The built-in validator serves reviewed contracts in a managed pool. Public-pool ERC-7562 conformance, the upstream suite and production network capacity require separate qualification.
 
 **Release tests.** Run the version-matched upstream Bundler tests and integration fixtures for sponsored and self-funded operations. Exercise duplicate submits, competing nonce replacements, signer failover, paymaster deposit depletion, accepted sends with lost replies, mixed execution results, and a reorg after a receipt has been observed. Verify duplicate deliveries and restarts do not create a second payment for one admitted operation. [Bundler specification tests](https://github.com/eth-infinitism/bundler-spec-tests)
 
