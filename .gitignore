@@ -1,0 +1,6 @@
+/bin/
+/config.json
+/EntryPointSimulations.json
+*.db
+*.db-shm
+*.db-wal

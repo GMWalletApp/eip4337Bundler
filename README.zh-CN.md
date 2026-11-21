@@ -4,7 +4,19 @@
 <p align="center"><a href="README.md">English</a> · <strong>简体中文</strong> · <a href="LICENSE">MIT</a></p>
 <p align="center"><a href="#钱包接入">钱包接入</a> · <a href="#操作生命周期">操作生命周期</a> · <a href="#生产部署与验收">生产部署与验收</a></p>
 
-**项目进度。** 当前仓库包含设计文档和许可证。下文约定首版服务的行为。可运行程序、各网络部署验证和容量实测数据随实现发布。
+本项目提供可运行的 Go Bundler，支持 EntryPoint **v0.7** 和运营方管理的操作池。钱包用 `userOpHash` 查询单笔操作。运营方可以用 PostgreSQL 运行多个实例，并通过 GM Wallet Broadcaster 投递已签外层交易。
+
+## 快速启动
+
+需要 Go 1.26.2 或更高版本、支持追踪的执行节点、已配置的签名服务和 Broadcaster。复制示例后，按部署说明填写合约代码哈希、受益地址、索引起点及凭证环境变量，并安装 v0.7 模拟合约文件。
+
+```sh
+cp config.example.json config.json
+go build -o bin/bundler ./cmd/bundler
+./bin/bundler -config config.json
+```
+
+启动后用 `GET /ready` 检查索引是否追上链头。[配置、状态表、同事接入接口和端到端验证](docs/operations.zh-CN.md)
 
 ## 一笔操作如何执行
 
@@ -17,7 +29,7 @@
 | Bundler | 按链和 EntryPoint 验证操作、维护等待池、组包、请求外层签名，逐笔索引链上执行结果。 |
 | GM Wallet Broadcaster | 通过 `POST /EVM/transactions` 接收**已签名的外层交易**，按发送账户的 Nonce 调度，向可用 RPC 并发广播，跟踪替换版本并回调 Bundler。[Broadcaster 接口](https://github.com/GMWalletApp/Broadcaster/blob/main/docs/api.zh-CN.md) |
 
-**首版兼容目标。** 首先实现运营方管理的操作池和 EntryPoint **v0.7**，与 GM Wallet Broadcaster 的以太坊配置示例对齐。每个部署固定 chain ID、EntryPoint 地址、运行时代码哈希、ABI 和操作哈希算法，通过验证后才向钱包公布。v0.8/v0.9、EIP-7702 授权、聚合签名和公共操作池对等网络分别验收后启用。Broadcaster 已接入的 EVM 链仍需验证 EntryPoint 和 RPC 模拟能力才能开通 Bundler。[GM Wallet 配置](https://github.com/GMWalletApp/Broadcaster/blob/main/config.example.json) · [EntryPoint 版本记录](https://github.com/eth-infinitism/account-abstraction/releases)
+**兼容范围。** 当前实现使用 EntryPoint **v0.7**，与 GM Wallet Broadcaster 的以太坊配置示例对齐。每个部署固定 chain ID、EntryPoint 地址、运行时代码哈希、ABI 和操作哈希算法，通过验证后才向钱包公布。v0.8/v0.9、EIP-7702 授权、聚合签名和公共操作池对等网络分别验收后启用。Broadcaster 已接入的 EVM 链仍需验证 EntryPoint 和 RPC 模拟能力才能开通 Bundler。[GM Wallet 配置](https://github.com/GMWalletApp/Broadcaster/blob/main/config.example.json) · [EntryPoint 版本记录](https://github.com/eth-infinitism/account-abstraction/releases)
 
 ## 钱包接入
 
@@ -31,6 +43,7 @@
 | `eth_sendUserOperation` | 已签操作、EntryPoint | 保存返回的哈希。它表示操作已通过验证并持久化入池。 |
 | `eth_getUserOperationByHash` | 操作哈希 | 查询操作原文和可用的入块位置。仍在等待时可能返回 null。 |
 | `eth_getUserOperationReceipt` | 操作哈希 | null 表示暂时没有入块回执。取得回执后读取当前操作的 `success`、费用、日志和外层交易回执。 |
+| `gm_getUserOperationStatus` | 操作哈希 | 查看本服务保存的调度状态、Broadcaster 任务 ID 和外层交易候选。 |
 
 ### 示例：提交一笔操作
 
@@ -112,7 +125,9 @@ JSON-RPC 返回结构化错误，并保留可获得的 EntryPoint `AAxx` 原因�
 | 持久化与恢复 | 多实例原子领取任务、替换操作、登记包内成员。保存索引检查点，备份并演练恢复。重启后从检查点补齐索引，再报告最新回执。 |
 | 日常运维 | TLS 接入、按客户鉴权和限额，管理诊断接口仅供内部访问。日志关联 chain ID、EntryPoint、操作哈希、包交易哈希和区块哈希。监控索引停滞、模拟饱和、队列等待、签名账户余额及节点故障。 |
 
-**发布验收。** 针对实际 EntryPoint 版本运行上游 Bundler 规范测试，用自付和代付操作完成端到端验证。覆盖重复提交、同 Nonce 替换竞争、签名实例切换、代付存款耗尽、节点已接收但响应丢失、同包部分操作回退，以及观察到回执后发生重组。复核重复通知和进程重启后同一已受理操作只产生一次付款。[Bundler 规范测试](https://github.com/eth-infinitism/bundler-spec-tests)
+**已验证。** 本地 Anvil 与真实 Broadcaster 的集成测试覆盖同包自付成功、代付执行回退、保存签名后切换实例、提交响应丢失，以及重组后重新入块。内置验证器用于已审核合约的受管池。公开操作池的 ERC-7562 策略、上游规范套件以及生产网络容量需单独验收。
+
+**上线验收。** 针对实际 EntryPoint 版本运行上游 Bundler 规范测试，用自付和代付操作完成端到端验证。覆盖重复提交、同 Nonce 替换竞争、签名实例切换、代付存款耗尽、节点已接收但响应丢失、同包部分操作回退，以及观察到回执后发生重组。复核重复通知和进程重启后同一已受理操作只产生一次付款。[Bundler 规范测试](https://github.com/eth-infinitism/bundler-spec-tests)
 
 **性能报告。** 记录硬件、节点及客户端版本、目标链、区块 Gas 上限、追踪延迟、账户和代付场景占比、并发数及测试时长。分别报告每秒持久化受理数、每块实际上链操作数、受理和回执查询延迟的 p50/p95/p99、队列等待以及出块到回执可查的延迟。在稳定流量、突发流量和一家节点离线时分别测量。对外公布同时满足约定延迟和积压上限的最高持续处理速率。
 
