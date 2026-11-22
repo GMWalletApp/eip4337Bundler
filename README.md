@@ -1,7 +1,7 @@
 <p align="center"><img src="https://github.com/GMWalletApp.png?size=96" width="80" height="80" alt="GM Wallet"></p>
 <h1 align="center">GM Wallet ERC-4337 Bundler</h1>
 <p align="center"><strong>Submit a signed smart-account operation and follow its execution from admission to an on-chain receipt.</strong></p>
-<p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a> · <a href="LICENSE">GM Wallet Community License 2.0</a></p>
+<p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a> · <a href="LICENSE">GM Wallet Community License 2.2</a></p>
 <p align="center"><a href="#wallet-integration">Wallet integration</a> · <a href="#operation-lifecycle">Operation lifecycle</a> · <a href="#production-readiness">Production readiness</a></p>
 
 This Go service runs an operator-managed pool for EntryPoint **v0.7**. Wallets track individual operations by `userOpHash`. Operators can run multiple replicas against PostgreSQL and deliver signed outer transactions through GM Wallet Broadcaster.
@@ -133,4 +133,4 @@ The sender's operation nonce contains a 192-bit key and a 64-bit sequence. Keep 
 
 ## License
 
-Companies whose worldwide revenue with affiliates strictly exceeds USD 1,000,000 over the preceding 12 months need a paid license, including loss-making groups. Under the community terms, release, delivery or operational deployment of a modified version requires free public access to its exact corresponding source, prominent attribution and an original-project link. Separate written commercial terms may apply. [License](LICENSE) · [Contributor terms](CONTRIBUTING.md) · [info@gmwallet.app](mailto:info@gmwallet.app)
+Companies whose worldwide revenue with affiliates strictly exceeds USD 1,000,000 over the preceding 12 months need a paid license, including loss-making groups. Under the community terms, release, delivery or operational deployment of a modified version requires free public access to its exact corresponding source, prominent attribution and an original-project link. For each such version, including SaaS deployments, submit the exact revision upstream by pull request or a branch as described in section 13. GM Wallet decides whether to merge it. Separate written commercial terms may apply. [License](LICENSE) · [Contributor terms](CONTRIBUTING.md) · [info@gmwallet.app](mailto:info@gmwallet.app)

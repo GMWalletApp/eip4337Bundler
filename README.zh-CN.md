@@ -1,7 +1,7 @@
 <p align="center"><img src="https://github.com/GMWalletApp.png?size=96" width="80" height="80" alt="GM Wallet"></p>
 <h1 align="center">GM Wallet ERC-4337 Bundler</h1>
 <p align="center"><strong>提交智能账户签好的操作，用同一个哈希从受理跟踪到链上执行结果。</strong></p>
-<p align="center"><a href="README.md">English</a> · <strong>简体中文</strong> · <a href="LICENSE">GM Wallet Community License 2.0</a></p>
+<p align="center"><a href="README.md">English</a> · <strong>简体中文</strong> · <a href="LICENSE">GM Wallet Community License 2.2</a></p>
 <p align="center"><a href="#钱包接入">钱包接入</a> · <a href="#操作生命周期">操作生命周期</a> · <a href="#生产部署与验收">生产部署与验收</a></p>
 
 本项目提供可运行的 Go Bundler，支持 EntryPoint **v0.7** 和运营方管理的操作池。钱包用 `userOpHash` 查询单笔操作。运营方可以用 PostgreSQL 运行多个实例，并通过 GM Wallet Broadcaster 投递已签外层交易。
@@ -133,4 +133,4 @@ JSON-RPC 返回结构化错误，并保留可获得的 EntryPoint `AAxx` 原因�
 
 ## 许可证
 
-公司及其关联实体过去 12 个月的全球合计收入严格超过 100 万美元，即使亏损也须购买许可。按社区条款，修改版在发布、交付或上线运行时须免费向公众提供该版本的完整对应源码，显著保留指定署名及原项目链接。另行签署的商业合同可约定不同条款。 [许可](LICENSE) · [贡献者条款](CONTRIBUTING.md) · [info@gmwallet.app](mailto:info@gmwallet.app)
+公司及其关联实体过去 12 个月的全球合计收入严格超过 100 万美元，即使亏损也须购买许可。按社区条款，修改版在发布、交付或上线运行时须免费向公众提供该版本的完整对应源码，显著保留指定署名及原项目链接。每个修改版本（包括 SaaS 上线版本）还须按第 13 节通过 PR 或分支将该版本的实际修改提交给原项目，并注明提交号。GM Wallet 自行决定是否合并。另行签署的商业合同可约定不同条款。 [许可](LICENSE) · [贡献者条款](CONTRIBUTING.md) · [info@gmwallet.app](mailto:info@gmwallet.app)
